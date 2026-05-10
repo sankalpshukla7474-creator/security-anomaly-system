@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Endpoint Security SOC Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand-block">
+      <div class="brand-mark">ES</div>
+      <div>
+        <p class="eyebrow">Endpoint Security Platform</p>
+        <h1>AI SOC Command Center</h1>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <div class="status-pill">
+        <span class="pulse"></span>
+        <span>Live Replay</span>
+      </div>
+      <div class="meta-pill">Refresh <strong id="refreshInterval">5s</strong></div>
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="false">
+        <span class="theme-toggle-track" aria-hidden="true">
+          <span class="theme-toggle-thumb"></span>
+        </span>
+        <span id="themeToggleText">Dark</span>
+      </button>
+      <button id="exportButton" class="ghost-button" type="button">Export</button>
+      <button id="attackButton" class="danger-button" type="button">Simulate Attack</button>
+    </div>
+  </header>
+
+  <div id="eliminationOverlay" class="elimination-overlay" aria-live="assertive" aria-hidden="true">
+    <div>
+      <span>Threat Neutralized</span>
+      <strong>Anomaly Eliminated</strong>
+    </div>
+  </div>
+
+  <main class="shell">
+    <section id="threatBanner" class="threat-banner severity-low">
+      <div>
+        <p class="eyebrow">Current Threat Posture</p>
+        <h2 id="threatLevel">Synchronizing</h2>
+        <p id="threatSummary">Loading endpoint replay feed...</p>
+      </div>
+      <div class="score-ring" aria-label="Threat score">
+        <span id="threatScore">0</span>
+        <small>Risk</small>
+      </div>
+    </section>
+
+    <section class="kpi-grid" aria-label="SOC KPIs">
+      <article class="metric-card">
+        <span>Total Samples</span>
+        <strong id="totalSamples">--</strong>
+        <small>Replay dataset</small>
+      </article>
+      <article class="metric-card">
+        <span>Anomalies</span>
+        <strong id="anomalies">--</strong>
+        <small id="windowAnomalies">-- in active window</small>
+      </article>
+      <article class="metric-card">
+        <span>Fleet Health</span>
+        <strong id="fleetHealth">--</strong>
+        <small>Endpoint readiness</small>
+      </article>
+      <article class="metric-card">
+        <span>Threshold</span>
+        <strong id="threshold">--</strong>
+        <small>Autoencoder MSE</small>
+      </article>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="panel chart-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Real-Time Detection</p>
+            <h3>Moving Anomaly Signal</h3>
+          </div>
+          <div class="chart-legend">
+            <span><i class="legend-line signal"></i>Reconstruction error</span>
+            <span><i class="legend-line threshold"></i>Threshold</span>
+          </div>
+        </div>
+        <div id="anomalyChart" class="chart-container">
+          <canvas id="chartCanvas"></canvas>
+        </div>
+        <div class="chart-footer">
+          <span>Cursor <strong id="cursorLabel">--</strong></span>
+          <span>Window <strong id="windowLabel">90 samples</strong></span>
+          <span>Mode <strong>Dataset replay</strong></span>
+        </div>
+      </article>
+
+      <aside class="panel attack-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Simulation Control</p>
+            <h3>Attack Drill</h3>
+          </div>
+        </div>
+        <div id="attackStatus" class="attack-status ready">
+          <strong>Ready</strong>
+          <span>Inject high-risk endpoint samples for demo validation.</span>
+        </div>
+        <div class="drill-list">
+          <div><span>Scenario</span><strong>Endpoint compromise</strong></div>
+          <div><span>Expected signal</span><strong>Critical anomaly burst</strong></div>
+          <div><span>Response</span><strong>Incident queue update</strong></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="lower-grid">
+      <article class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Fleet Health</p>
+            <h3>Endpoint Status</h3>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Endpoint</th>
+                <th>Risk</th>
+                <th>Severity</th>
+                <th>Status</th>
+                <th>Recommended Action</th>
+              </tr>
+            </thead>
+            <tbody id="endpointTable">
+              <tr><td colspan="5" class="empty-state">Loading endpoint fleet...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Analyst Queue</p>
+            <h3>Recent Incidents</h3>
+          </div>
+        </div>
+        <div id="incidentQueue" class="incident-list">
+          <p class="empty-state">Waiting for anomaly events...</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="lower-grid compact">
+      <article class="panel model-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Model Health</p>
+            <h3>Detection Engine</h3>
+          </div>
+          <span class="chip chip-low">Operational</span>
+        </div>
+        <div class="model-grid">
+          <div><span>Model</span><strong id="modelType">--</strong></div>
+          <div><span>Mode</span><strong id="modelMode">--</strong></div>
+          <div><span>Features</span><strong id="featureCount">--</strong></div>
+          <div><span>Training Records</span><strong id="trainingRecords">--</strong></div>
+        </div>
+        <div id="telemetryTags" class="tag-row"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">SOC Activity</p>
+            <h3>Analyst Feed</h3>
+          </div>
+        </div>
+        <div id="activityFeed" class="activity-feed">
+          <p class="empty-state">Synchronizing activity...</p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
